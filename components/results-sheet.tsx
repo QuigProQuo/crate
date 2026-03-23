@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, type PanInfo } from "framer-motion";
 import type { RecordInfo, TrackPreview, ConditionGrade } from "@/lib/types";
 import { TrackList } from "@/components/track-list";
@@ -20,6 +20,17 @@ export function ResultsSheet({ record, previews, onClose, onCapturePhoto }: Resu
   const { currentTrackUrl, isPlaying, play } = useAudioPlayer();
   const [gradingOpen, setGradingOpen] = useState(false);
   const [conditionGrade, setConditionGrade] = useState<ConditionGrade | null>(null);
+  const autoPlayed = useRef(false);
+
+  // Auto-play first available preview on mount (user gesture from AR card tap)
+  useEffect(() => {
+    if (autoPlayed.current) return;
+    const firstPreview = previews.find((p) => p.previewUrl);
+    if (firstPreview?.previewUrl) {
+      autoPlayed.current = true;
+      play(firstPreview.previewUrl);
+    }
+  }, [previews, play]);
 
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.y > 150) {
