@@ -7,6 +7,10 @@ export function useCamera() {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
+  const [facingMode, setFacingMode] = useState<"environment" | "user">(
+    "environment"
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -16,7 +20,7 @@ export function useCamera() {
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: { ideal: "environment" },
+            facingMode: { ideal: facingMode },
             width: { ideal: 1920 },
             height: { ideal: 1080 },
           },
@@ -47,7 +51,32 @@ export function useCamera() {
       cancelled = true;
       mediaStream?.getTracks().forEach((t) => t.stop());
     };
-  }, []);
+  }, [facingMode]);
+
+  const toggleTorch = useCallback(async () => {
+    if (!stream) return;
+    const track = stream.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      const next = !torchOn;
+      await track.applyConstraints({
+        advanced: [{ torch: next } as MediaTrackConstraintSet],
+      });
+      setTorchOn(next);
+    } catch {
+      // Torch not supported on this device/browser
+    }
+  }, [stream, torchOn]);
+
+  const flipCamera = useCallback(() => {
+    // Stop current stream
+    stream?.getTracks().forEach((t) => t.stop());
+    setStream(null);
+    setIsReady(false);
+    setTorchOn(false);
+    // Toggle facing mode — useEffect will re-initialize
+    setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
+  }, [stream]);
 
   const capturePhoto = useCallback((): Blob | null => {
     const video = videoRef.current;
@@ -71,15 +100,6 @@ export function useCamera() {
 
     ctx.drawImage(video, 0, 0, cw, ch);
 
-    let blob: Blob | null = null;
-    canvas.toBlob(
-      (b) => {
-        blob = b;
-      },
-      "image/jpeg",
-      0.8
-    );
-
     // toBlob is async — use synchronous toDataURL fallback for immediate return
     const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
     const binary = atob(dataUrl.split(",")[1]);
@@ -90,5 +110,14 @@ export function useCamera() {
     return new Blob([arr], { type: "image/jpeg" });
   }, [stream]);
 
-  return { videoRef, stream, error, isReady, capturePhoto };
+  return {
+    videoRef,
+    stream,
+    error,
+    isReady,
+    capturePhoto,
+    torchOn,
+    toggleTorch,
+    flipCamera,
+  };
 }

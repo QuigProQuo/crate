@@ -1,16 +1,22 @@
 "use client";
 
+import { useRef } from "react";
+
 interface CaptureButtonProps {
   onCapture: () => void;
   onSearchOpen: () => void;
+  onFilePick: (file: File) => void;
   disabled: boolean;
 }
 
 export function CaptureButton({
   onCapture,
   onSearchOpen,
+  onFilePick,
   disabled,
 }: CaptureButtonProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleCapture = () => {
     if (disabled) return;
     navigator.vibrate?.(50);
@@ -22,8 +28,54 @@ export function CaptureButton({
     onSearchOpen();
   };
 
+  const handleGallery = () => {
+    navigator.vibrate?.(50);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onFilePick(file);
+    }
+    // Reset so the same file can be selected again
+    e.target.value = "";
+  };
+
   return (
     <div className="fixed bottom-8 left-0 right-0 z-50 flex items-center justify-center gap-6">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
+      {/* Gallery picker */}
+      <button
+        onClick={handleGallery}
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm active:scale-95"
+        aria-label="Pick from gallery"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21 15 16 10 5 21" />
+        </svg>
+      </button>
+
+      {/* Shutter */}
       <button
         onClick={handleCapture}
         disabled={disabled}
@@ -47,6 +99,7 @@ export function CaptureButton({
         </svg>
       </button>
 
+      {/* Search */}
       <button
         onClick={handleSearch}
         className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm active:scale-95"
