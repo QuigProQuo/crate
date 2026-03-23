@@ -31,6 +31,9 @@ interface DiscogsRelease {
   genres: string[];
   images?: { uri: string; type: string }[];
   tracklist: DiscogsTrack[];
+  lowest_price?: number;
+  num_for_sale?: number;
+  community?: { have: number; want: number };
 }
 
 function normalizeRelease(release: DiscogsRelease): RecordInfo {
@@ -47,6 +50,10 @@ function normalizeRelease(release: DiscogsRelease): RecordInfo {
       title: t.title,
       duration: t.duration,
     })),
+    lowestPrice: release.lowest_price,
+    numForSale: release.num_for_sale,
+    haveCount: release.community?.have,
+    wantCount: release.community?.want,
   };
 }
 

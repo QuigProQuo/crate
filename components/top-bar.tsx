@@ -5,6 +5,9 @@ interface TopBarProps {
   onTorchToggle: () => void;
   onFlipCamera: () => void;
   onHistoryOpen: () => void;
+  batchMode: boolean;
+  onBatchToggle: () => void;
+  batchCount: number;
 }
 
 export function TopBar({
@@ -12,6 +15,9 @@ export function TopBar({
   onTorchToggle,
   onFlipCamera,
   onHistoryOpen,
+  batchMode,
+  onBatchToggle,
+  batchCount,
 }: TopBarProps) {
   return (
     <div className="fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-5 pt-14 pb-3">
@@ -88,6 +94,34 @@ export function TopBar({
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg>
+        </button>
+
+        {/* Batch mode */}
+        <button
+          onClick={onBatchToggle}
+          className={`relative flex h-10 w-10 items-center justify-center rounded-full backdrop-blur-md active:scale-95 transition-colors ${
+            batchMode ? "bg-purple-400/25" : "bg-white/10"
+          }`}
+          aria-label="Toggle batch mode"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={batchMode ? "rgb(192,132,252)" : "rgba(255,255,255,0.7)"}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+            <path d="M16 3H8l-2 4h12L16 3z" />
+          </svg>
+          {batchCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-purple-500 text-[10px] font-bold text-white">
+              {batchCount}
+            </span>
+          )}
         </button>
       </div>
     </div>

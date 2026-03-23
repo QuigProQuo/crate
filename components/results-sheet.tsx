@@ -1,18 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import { motion, AnimatePresence, type PanInfo } from "framer-motion";
-import type { RecordInfo, TrackPreview } from "@/lib/types";
+import type { RecordInfo, TrackPreview, ConditionGrade } from "@/lib/types";
 import { TrackList } from "@/components/track-list";
 import { useAudioPlayer } from "@/hooks/use-audio-player";
+import { PriceSection } from "@/components/price-section";
+import { ConditionBadge } from "@/components/condition-badge";
+import { ConditionModal } from "@/components/condition-modal";
 
 interface ResultsSheetProps {
   record: RecordInfo;
   previews: TrackPreview[];
   onClose: () => void;
+  onCapturePhoto: () => Blob | null;
 }
 
-export function ResultsSheet({ record, previews, onClose }: ResultsSheetProps) {
+export function ResultsSheet({ record, previews, onClose, onCapturePhoto }: ResultsSheetProps) {
   const { currentTrackUrl, isPlaying, play } = useAudioPlayer();
+  const [gradingOpen, setGradingOpen] = useState(false);
+  const [conditionGrade, setConditionGrade] = useState<ConditionGrade | null>(null);
 
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.y > 150) {
@@ -73,6 +80,25 @@ export function ResultsSheet({ record, previews, onClose }: ResultsSheetProps) {
             ))}
           </div>
 
+          <PriceSection record={record} />
+
+          {/* Condition grading */}
+          <div className="mt-4 flex items-center gap-3">
+            {conditionGrade ? (
+              <div className="flex items-center gap-2">
+                <ConditionBadge grade={conditionGrade.mediaGrade} label="Media" />
+                <ConditionBadge grade={conditionGrade.sleeveGrade} label="Sleeve" />
+              </div>
+            ) : (
+              <button
+                onClick={() => setGradingOpen(true)}
+                className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white/70 active:scale-95"
+              >
+                Grade Condition
+              </button>
+            )}
+          </div>
+
           {/* Divider */}
           <div className="my-5 h-px bg-white/10" />
 
@@ -87,6 +113,13 @@ export function ResultsSheet({ record, previews, onClose }: ResultsSheetProps) {
             />
           )}
         </div>
+
+        <ConditionModal
+          isOpen={gradingOpen}
+          onClose={() => setGradingOpen(false)}
+          onCapturePhoto={onCapturePhoto}
+          onGraded={setConditionGrade}
+        />
       </motion.div>
     </AnimatePresence>
   );

@@ -7,6 +7,19 @@ export interface RecordInfo {
   genres: string[];
   coverImage: string;
   tracklist: TrackInfo[];
+  lowestPrice?: number;
+  numForSale?: number;
+  haveCount?: number;
+  wantCount?: number;
+}
+
+export type GoldmineGrade = 'M' | 'NM' | 'VG+' | 'VG' | 'G+' | 'G' | 'F' | 'P';
+
+export interface ConditionGrade {
+  mediaGrade: GoldmineGrade;
+  sleeveGrade: GoldmineGrade;
+  confidence: 'high' | 'medium' | 'low';
+  notes: string[];
 }
 
 export interface TrackInfo {
