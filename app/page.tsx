@@ -1,65 +1,97 @@
-import Image from "next/image";
+"use client";
+
+import { useCallback, useState } from "react";
+import { CameraViewfinder } from "@/components/camera-viewfinder";
+import { ScanOverlay } from "@/components/scan-overlay";
+import { CaptureButton } from "@/components/capture-button";
+import { LoadingState } from "@/components/loading-state";
+import { ErrorToast } from "@/components/error-toast";
+import { ResultsSheet } from "@/components/results-sheet";
+import { SearchModal } from "@/components/search-modal";
+import { useCamera } from "@/hooks/use-camera";
+import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
+import { useRecordLookup } from "@/hooks/use-record-lookup";
 
 export default function Home() {
+  const { videoRef, stream, error: cameraError, capturePhoto } = useCamera();
+  const { state, lookupByBarcode, lookupByPhoto, lookupBySearch, reset } =
+    useRecordLookup();
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  const handleBarcodeDetected = useCallback(
+    (barcode: string) => {
+      if (state.status === "idle") {
+        lookupByBarcode(barcode);
+      }
+    },
+    [state.status, lookupByBarcode]
+  );
+
+  useBarcodeScanner(videoRef, handleBarcodeDetected, state.status === "idle");
+
+  const handleCapture = useCallback(() => {
+    const blob = capturePhoto();
+    if (blob) {
+      lookupByPhoto(blob);
+    }
+  }, [capturePhoto, lookupByPhoto]);
+
+  const handleSearch = useCallback(
+    (query: string) => {
+      lookupBySearch(query);
+    },
+    [lookupBySearch]
+  );
+
+  const handleDismissError = useCallback(() => {
+    reset();
+  }, [reset]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="relative h-dvh w-full overflow-hidden bg-black">
+      {/* Camera layer */}
+      <CameraViewfinder
+        videoRef={videoRef}
+        stream={stream}
+        error={cameraError}
+      />
+
+      {/* Scan overlay — visible when idle */}
+      <ScanOverlay visible={state.status === "idle" && !cameraError} />
+
+      {/* Capture + search buttons */}
+      <CaptureButton
+        onCapture={handleCapture}
+        onSearchOpen={() => setSearchOpen(true)}
+        disabled={state.status === "loading"}
+      />
+
+      {/* Loading overlay */}
+      {state.status === "loading" && <LoadingState step={state.step} />}
+
+      {/* Results bottom sheet */}
+      {state.status === "results" && state.record && (
+        <ResultsSheet
+          record={state.record}
+          previews={state.previews ?? []}
+          onClose={reset}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      )}
+
+      {/* Error toast */}
+      {state.status === "error" && state.error && (
+        <ErrorToast
+          message={state.error}
+          onDismiss={handleDismissError}
+        />
+      )}
+
+      {/* Search modal */}
+      <SearchModal
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onSearch={handleSearch}
+      />
+    </main>
   );
 }
