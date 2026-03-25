@@ -1,8 +1,18 @@
 import { identifyRecord } from '@/lib/claude-vision';
 
+const VALID_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+
 export async function POST(request: Request) {
   const start = Date.now();
-  const formData = await request.formData();
+
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    console.warn('[identify] invalid content-type, expected multipart/form-data');
+    return Response.json({ error: 'multipart/form-data required' }, { status: 400 });
+  }
+
   const image = formData.get('image') as File | null;
 
   if (!image) {
@@ -12,7 +22,7 @@ export async function POST(request: Request) {
 
   const buffer = await image.arrayBuffer();
   const base64 = Buffer.from(buffer).toString('base64');
-  const mediaType = image.type || 'image/jpeg';
+  const mediaType = VALID_TYPES.has(image.type) ? image.type : 'image/jpeg';
   const sizeKb = Math.round(buffer.byteLength / 1024);
 
   console.log(`[identify] start | ${mediaType} | ${sizeKb}KB`);
