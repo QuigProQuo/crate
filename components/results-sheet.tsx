@@ -1,36 +1,31 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence, type PanInfo } from "framer-motion";
 import type { RecordInfo, TrackPreview, ConditionGrade } from "@/lib/types";
 import { TrackList } from "@/components/track-list";
-import { useAudioPlayer } from "@/hooks/use-audio-player";
 import { PriceSection } from "@/components/price-section";
 import { ConditionBadge } from "@/components/condition-badge";
 import { ConditionModal } from "@/components/condition-modal";
+
+interface AudioPlayer {
+  currentTrackUrl: string | null;
+  isPlaying: boolean;
+  play: (url: string) => void;
+}
 
 interface ResultsSheetProps {
   record: RecordInfo;
   previews: TrackPreview[];
   onClose: () => void;
   onCapturePhoto: () => Blob | null;
+  audio: AudioPlayer;
 }
 
-export function ResultsSheet({ record, previews, onClose, onCapturePhoto }: ResultsSheetProps) {
-  const { currentTrackUrl, isPlaying, play } = useAudioPlayer();
+export function ResultsSheet({ record, previews, onClose, onCapturePhoto, audio }: ResultsSheetProps) {
+  const { currentTrackUrl, isPlaying, play } = audio;
   const [gradingOpen, setGradingOpen] = useState(false);
   const [conditionGrade, setConditionGrade] = useState<ConditionGrade | null>(null);
-  const autoPlayed = useRef(false);
-
-  // Auto-play first available preview on mount (user gesture from AR card tap)
-  useEffect(() => {
-    if (autoPlayed.current) return;
-    const firstPreview = previews.find((p) => p.previewUrl);
-    if (firstPreview?.previewUrl) {
-      autoPlayed.current = true;
-      play(firstPreview.previewUrl);
-    }
-  }, [previews, play]);
 
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.y > 150) {

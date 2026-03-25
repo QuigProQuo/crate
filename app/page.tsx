@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { CameraViewfinder } from "@/components/camera-viewfinder";
 import { ScanOverlay } from "@/components/scan-overlay";
@@ -19,6 +19,7 @@ import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
 import { useRecordLookup } from "@/hooks/use-record-lookup";
 import { useScanHistory } from "@/hooks/use-scan-history";
 import { useBatchMode, type BatchItem } from "@/hooks/use-batch-mode";
+import { useAudioPlayer } from "@/hooks/use-audio-player";
 
 export default function Home() {
   const {
@@ -34,6 +35,8 @@ export default function Home() {
     useRecordLookup();
   const { history, addToHistory } = useScanHistory();
   const batch = useBatchMode();
+  const audio = useAudioPlayer();
+  const autoPlayedRef = useRef(false);
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -58,10 +61,23 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.status, state.record]);
 
+  // Auto-play first preview when results arrive (AR card stage)
+  useEffect(() => {
+    if (state.status === "results" && state.previews && !autoPlayedRef.current) {
+      const first = state.previews.find((p) => p.previewUrl);
+      if (first?.previewUrl) {
+        autoPlayedRef.current = true;
+        audio.playWhenReady(first.previewUrl);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.status, state.previews]);
+
   // Reset full results view when going back to idle
   useEffect(() => {
     if (state.status === "idle") {
       setShowFullResults(false);
+      autoPlayedRef.current = false;
     }
   }, [state.status]);
 
@@ -79,9 +95,10 @@ export default function Home() {
   const handleCapture = useCallback(() => {
     const blob = capturePhoto();
     if (blob) {
+      audio.prime(); // Unlock audio on user gesture so auto-play works when results arrive
       lookupByPhoto(blob);
     }
-  }, [capturePhoto, lookupByPhoto]);
+  }, [capturePhoto, lookupByPhoto, audio]);
 
   const handleFilePick = useCallback(
     (file: File) => {
@@ -112,9 +129,10 @@ export default function Home() {
     [lookupBySearch]
   );
 
-  const handleDismissError = useCallback(() => {
+  const handleDismiss = useCallback(() => {
+    audio.stop();
     reset();
-  }, [reset]);
+  }, [reset, audio]);
 
   const isResults = state.status === "results" && state.record;
 
@@ -167,7 +185,7 @@ export default function Home() {
           <ARInfoCard
             record={state.record!}
             onExpand={() => setShowFullResults(true)}
-            onDismiss={reset}
+            onDismiss={handleDismiss}
           />
         )}
       </AnimatePresence>
@@ -177,8 +195,9 @@ export default function Home() {
         <ResultsSheet
           record={state.record!}
           previews={state.previews ?? []}
-          onClose={reset}
+          onClose={handleDismiss}
           onCapturePhoto={capturePhoto}
+          audio={audio}
         />
       )}
 
@@ -196,7 +215,7 @@ export default function Home() {
 
       {/* Error toast */}
       {state.status === "error" && state.error && (
-        <ErrorToast message={state.error} onDismiss={handleDismissError} />
+        <ErrorToast message={state.error} onDismiss={handleDismiss} />
       )}
 
       {/* Search modal */}
