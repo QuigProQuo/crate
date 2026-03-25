@@ -51,7 +51,7 @@ export function ResultsSheet({ record, previews, onClose, onCapturePhoto, audio 
           <div className="h-1 w-10 rounded-full bg-white/30" />
         </div>
 
-        <div className="overflow-y-auto px-6 pb-12" style={{ maxHeight: "calc(90vh - 20px)" }}>
+        <div className="overflow-y-auto px-6 pb-36" style={{ maxHeight: "calc(90vh - 20px)" }}>
           {/* Album cover */}
           {record.coverImage && (
             <div className="flex justify-center mb-4">
