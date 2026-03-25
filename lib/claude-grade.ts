@@ -1,7 +1,24 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { ConditionGrade } from '@/lib/types';
+import type { ConditionGrade, GoldmineGrade } from '@/lib/types';
 
 const client = new Anthropic();
+
+const grades = ['M', 'NM', 'VG+', 'VG', 'G+', 'G', 'F', 'P'];
+
+const gradeTool: Anthropic.Messages.Tool = {
+  name: 'grade_condition',
+  description: 'Report the graded condition of the vinyl record and sleeve.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      mediaGrade: { type: 'string', enum: grades, description: 'Goldmine grade for the vinyl/media' },
+      sleeveGrade: { type: 'string', enum: grades, description: 'Goldmine grade for the sleeve/cover' },
+      confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
+      notes: { type: 'array', items: { type: 'string' }, description: 'Observations about condition' },
+    },
+    required: ['mediaGrade', 'sleeveGrade', 'confidence', 'notes'],
+  },
+};
 
 export async function gradeCondition(
   imageBase64: string,
@@ -10,6 +27,13 @@ export async function gradeCondition(
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 512,
+    system: `You are a vinyl record grading expert using the Goldmine standard. Analyze the image and grade the record's condition.
+
+Goldmine Grades: M (Mint), NM (Near Mint), VG+ (Very Good Plus), VG (Very Good), G+ (Good Plus), G (Good), F (Fair), P (Poor).
+
+Assess both the vinyl/media and the sleeve/cover separately. Look for scratches, groove wear, scuffs, warping, ring wear, seam splits, corner damage, writing, and stickers. Use the grade_condition tool to report your findings.`,
+    tools: [gradeTool],
+    tool_choice: { type: 'tool', name: 'grade_condition' },
     messages: [
       {
         role: 'user',
@@ -24,48 +48,29 @@ export async function gradeCondition(
           },
           {
             type: 'text',
-            text: `You are a vinyl record grading expert using the Goldmine standard. Analyze this image and grade the record's condition.
-
-Goldmine Grades:
-- M (Mint): Perfect, unplayed, no defects
-- NM (Near Mint): Nearly perfect, minimal signs of handling
-- VG+ (Very Good Plus): Light wear, minor scuffs, plays with minimal noise
-- VG (Very Good): Noticeable wear, light scratches, some surface noise
-- G+ (Good Plus): Heavy wear, scratches visible, significant surface noise
-- G (Good): Very heavy wear, plays through with constant noise
-- F (Fair): Damaged but plays, deep scratches or warping
-- P (Poor): Barely playable or unplayable
-
-Assess both the vinyl/media and the sleeve/cover separately. Look for:
-- Scratches (hairline, light, deep)
-- Groove wear (gray/white appearance)
-- Scuffs and handling marks
-- Warping or dish warping
-- Sleeve: ring wear, seam splits, corner damage, writing, stickers
-
-Respond with JSON only:
-{"mediaGrade": "VG+", "sleeveGrade": "VG", "confidence": "high|medium|low", "notes": ["note1", "note2"]}`,
+            text: 'Grade this vinyl record.',
           },
         ],
       },
     ],
   });
 
-  const textBlock = response.content.find((block) => block.type === 'text');
-  const text = textBlock && 'text' in textBlock ? textBlock.text : '';
-
-  // Extract JSON from response (may be wrapped in markdown code block)
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    return { mediaGrade: 'VG', sleeveGrade: 'VG', confidence: 'low', notes: ['Unable to parse grading response'] };
+  const toolBlock = response.content.find((block) => block.type === 'tool_use');
+  if (!toolBlock || toolBlock.type !== 'tool_use') {
+    throw new Error('No grading returned');
   }
 
-  const json = JSON.parse(jsonMatch[0]);
+  const input = toolBlock.input as {
+    mediaGrade: string;
+    sleeveGrade: string;
+    confidence: string;
+    notes: string[];
+  };
 
   return {
-    mediaGrade: json.mediaGrade || 'VG',
-    sleeveGrade: json.sleeveGrade || 'VG',
-    confidence: json.confidence || 'medium',
-    notes: json.notes || [],
+    mediaGrade: (input.mediaGrade || 'VG') as GoldmineGrade,
+    sleeveGrade: (input.sleeveGrade || 'VG') as GoldmineGrade,
+    confidence: (input.confidence || 'medium') as ConditionGrade['confidence'],
+    notes: input.notes || [],
   };
 }
