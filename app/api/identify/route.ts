@@ -12,6 +12,12 @@ export async function POST(request: Request) {
   const base64 = Buffer.from(buffer).toString('base64');
   const mediaType = image.type || 'image/jpeg';
 
-  const identification = await identifyRecord(base64, mediaType);
-  return Response.json(identification);
+  try {
+    const identification = await identifyRecord(base64, mediaType);
+    return Response.json(identification);
+  } catch (err) {
+    console.error('Identify error:', err);
+    const message = err instanceof Error ? err.message : 'Identification failed';
+    return Response.json({ error: message }, { status: 500 });
+  }
 }

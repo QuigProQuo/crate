@@ -36,7 +36,9 @@ export async function identifyRecord(
   });
 
   const textBlock = response.content.find((block) => block.type === 'text');
-  const text = textBlock && 'text' in textBlock ? textBlock.text : '';
+  const raw = textBlock && 'text' in textBlock ? textBlock.text : '';
+  // Strip markdown code fences if present
+  const text = raw.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
   const json = JSON.parse(text);
 
   return {

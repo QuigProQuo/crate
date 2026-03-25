@@ -12,6 +12,12 @@ export async function POST(request: Request) {
   const base64 = Buffer.from(buffer).toString('base64');
   const mediaType = image.type || 'image/jpeg';
 
-  const grade = await gradeCondition(base64, mediaType);
-  return Response.json(grade);
+  try {
+    const grade = await gradeCondition(base64, mediaType);
+    return Response.json(grade);
+  } catch (err) {
+    console.error('Grade error:', err);
+    const message = err instanceof Error ? err.message : 'Grading failed';
+    return Response.json({ error: message }, { status: 500 });
+  }
 }
