@@ -93,13 +93,18 @@ export default function Home() {
   useBarcodeScanner(videoRef, handleBarcodeDetected, state.status === "idle");
 
   const handleCapture = useCallback(() => {
-    if (showFullResults) audio.stop();
+    // If results are showing (AR card or full sheet), dismiss first so user can see the camera
+    if (state.status === "results") {
+      audio.stop();
+      reset();
+      return;
+    }
     const blob = capturePhoto();
     if (blob) {
       audio.prime(); // Unlock audio on user gesture so auto-play works when results arrive
       lookupByPhoto(blob);
     }
-  }, [capturePhoto, lookupByPhoto, audio, showFullResults]);
+  }, [capturePhoto, lookupByPhoto, audio, state.status, reset]);
 
   const handleFilePick = useCallback(
     (file: File) => {
