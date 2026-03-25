@@ -1,19 +1,21 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { RecordInfo } from "@/lib/types";
+import type { RecordInfo, ConditionGrade } from "@/lib/types";
+import { ConditionBadge } from "@/components/condition-badge";
 
 interface ARInfoCardProps {
   record: RecordInfo;
+  conditionGrade?: ConditionGrade;
   onExpand: () => void;
   onDismiss: () => void;
 }
 
-export function ARInfoCard({ record, onExpand, onDismiss }: ARInfoCardProps) {
+export function ARInfoCard({ record, conditionGrade, onExpand, onDismiss }: ARInfoCardProps) {
   return (
     <div className="fixed inset-0 z-25 flex items-center justify-center pointer-events-none">
       <motion.div
-        className="relative rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl p-4 max-w-[280px] w-full pointer-events-auto"
+        className="relative rounded-2xl bg-black/60 backdrop-blur-xl border border-white/15 shadow-2xl p-4 max-w-[280px] w-full pointer-events-auto"
         initial={{ scale: 0.85, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.85, opacity: 0 }}
@@ -67,6 +69,14 @@ export function ARInfoCard({ record, onExpand, onDismiss }: ARInfoCardProps) {
                 <span className="inline-block mt-2 rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-semibold text-emerald-400">
                   From ${record.lowestPrice.toFixed(2)}
                 </span>
+              )}
+
+              {/* Condition badges */}
+              {conditionGrade && (
+                <div className="flex items-center gap-1.5 mt-2">
+                  <ConditionBadge grade={conditionGrade.mediaGrade} label="Media" />
+                  <ConditionBadge grade={conditionGrade.sleeveGrade} label="Sleeve" />
+                </div>
               )}
             </div>
           </div>

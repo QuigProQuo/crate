@@ -47,5 +47,6 @@ export interface LookupState {
   step?: 'identify' | 'discogs' | 'previews';
   record?: RecordInfo;
   previews?: TrackPreview[];
+  conditionGrade?: ConditionGrade;
   error?: string;
 }

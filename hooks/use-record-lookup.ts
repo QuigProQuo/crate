@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { LookupState } from "@/lib/types";
+import type { ConditionGrade, LookupState } from "@/lib/types";
 
 export function useRecordLookup() {
   const [state, setState] = useState<LookupState>({ status: "idle" });
@@ -47,15 +47,19 @@ export function useRecordLookup() {
     try {
       setState({ status: "loading", step: "identify" });
 
-      const formData = new FormData();
-      formData.append("image", blob, "photo.jpg");
+      const identifyForm = new FormData();
+      identifyForm.append("image", blob, "photo.jpg");
 
-      const identifyRes = await fetch("/api/identify", {
-        method: "POST",
-        body: formData,
-      });
+      const gradeForm = new FormData();
+      gradeForm.append("image", blob, "photo.jpg");
 
-      if (!identifyRes.ok) {
+      // Fire identify and grade in parallel
+      const [identifyResult, gradeResult] = await Promise.allSettled([
+        fetch("/api/identify", { method: "POST", body: identifyForm }),
+        fetch("/api/grade", { method: "POST", body: gradeForm }),
+      ]);
+
+      if (identifyResult.status === "rejected" || !identifyResult.value.ok) {
         setState({
           status: "error",
           error: "Could not identify the record from the photo.",
@@ -63,7 +67,13 @@ export function useRecordLookup() {
         return;
       }
 
-      const identification = await identifyRes.json();
+      const identification = await identifyResult.value.json();
+
+      // Parse grade if available (non-blocking)
+      let conditionGrade: ConditionGrade | undefined;
+      if (gradeResult.status === "fulfilled" && gradeResult.value.ok) {
+        conditionGrade = await gradeResult.value.json();
+      }
 
       setState({ status: "loading", step: "discogs" });
 
@@ -95,7 +105,7 @@ export function useRecordLookup() {
       const previewsData = previewsRes.ok ? await previewsRes.json() : { tracks: [] };
       const previews = previewsData.tracks ?? [];
 
-      setState({ status: "results", record, previews });
+      setState({ status: "results", record, previews, conditionGrade });
     } catch {
       setState({ status: "error", error: "Something went wrong." });
     }

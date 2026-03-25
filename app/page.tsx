@@ -93,25 +93,28 @@ export default function Home() {
   useBarcodeScanner(videoRef, handleBarcodeDetected, state.status === "idle");
 
   const handleCapture = useCallback(() => {
+    if (showFullResults) audio.stop();
     const blob = capturePhoto();
     if (blob) {
       audio.prime(); // Unlock audio on user gesture so auto-play works when results arrive
       lookupByPhoto(blob);
     }
-  }, [capturePhoto, lookupByPhoto, audio]);
+  }, [capturePhoto, lookupByPhoto, audio, showFullResults]);
 
   const handleFilePick = useCallback(
     (file: File) => {
+      if (showFullResults) audio.stop();
       lookupByPhoto(file);
     },
-    [lookupByPhoto]
+    [lookupByPhoto, audio, showFullResults]
   );
 
   const handleSearch = useCallback(
     (query: string) => {
+      if (showFullResults) audio.stop();
       lookupBySearch(query);
     },
-    [lookupBySearch]
+    [lookupBySearch, audio, showFullResults]
   );
 
   const handleHistorySelect = useCallback(
@@ -171,7 +174,13 @@ export default function Home() {
       {/* Bottom bar */}
       <CaptureButton
         onCapture={handleCapture}
-        onSearchOpen={() => setSearchOpen(true)}
+        onSearchOpen={() => {
+          if (showFullResults) {
+            audio.stop();
+            reset();
+          }
+          setSearchOpen(true);
+        }}
         onFilePick={handleFilePick}
         disabled={state.status === "loading"}
       />
@@ -184,6 +193,7 @@ export default function Home() {
         {isResults && !showFullResults && !batch.enabled && (
           <ARInfoCard
             record={state.record!}
+            conditionGrade={state.conditionGrade}
             onExpand={() => setShowFullResults(true)}
             onDismiss={handleDismiss}
           />
