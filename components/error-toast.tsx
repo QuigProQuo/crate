@@ -10,6 +10,9 @@ interface ErrorToastProps {
 
 export function ErrorToast({ message, onDismiss, onRetry }: ErrorToastProps) {
   useEffect(() => {
+    if ("vibrate" in navigator) {
+      navigator.vibrate([100, 50, 100]);
+    }
     const timer = setTimeout(onDismiss, 5000);
     return () => clearTimeout(timer);
   }, [onDismiss]);

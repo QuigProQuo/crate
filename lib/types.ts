@@ -40,6 +40,11 @@ export interface Identification {
   confidence: 'high' | 'medium' | 'low';
 }
 
+export interface ScanHistoryEntry extends RecordInfo {
+  scannedAt: number;
+  conditionGrade?: ConditionGrade;
+}
+
 export type LookupStatus = 'idle' | 'loading' | 'results' | 'error';
 
 export interface LookupState {
