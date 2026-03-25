@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { useModal } from "@/hooks/use-modal";
 import type { BatchItem } from "@/hooks/use-batch-mode";
 
 interface BatchSummaryProps {
@@ -20,6 +21,7 @@ export function BatchSummary({
   onRemove,
   onClear,
 }: BatchSummaryProps) {
+  const modalRef = useModal(isOpen, onClose);
   const totalValue = items.reduce(
     (sum, item) => sum + (item.record.lowestPrice ?? 0),
     0
@@ -29,7 +31,9 @@ export function BatchSummary({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex flex-col bg-black/90 backdrop-blur-sm"
+          ref={modalRef}
+          tabIndex={-1}
+          className="fixed inset-0 z-50 flex flex-col bg-black/90 backdrop-blur-sm outline-none"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

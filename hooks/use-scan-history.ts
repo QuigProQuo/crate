@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import type { RecordInfo } from "@/lib/types";
+import type { RecordInfo, ConditionGrade, ScanHistoryEntry } from "@/lib/types";
 
 const STORAGE_KEY = "crate-scan-history";
 const MAX_HISTORY = 20;
 
 export function useScanHistory() {
-  const [history, setHistory] = useState<RecordInfo[]>([]);
+  const [history, setHistory] = useState<ScanHistoryEntry[]>([]);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -23,8 +23,21 @@ export function useScanHistory() {
     setHistory((prev) => {
       // Remove duplicate if exists
       const filtered = prev.filter((r) => r.id !== record.id);
+      const entry: ScanHistoryEntry = { ...record, scannedAt: Date.now() };
       // Add to front, cap at MAX_HISTORY
-      const next = [record, ...filtered].slice(0, MAX_HISTORY);
+      const next = [entry, ...filtered].slice(0, MAX_HISTORY);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  const updateGrade = useCallback((recordId: number, grade: ConditionGrade) => {
+    setHistory((prev) => {
+      const next = prev.map((entry) =>
+        entry.id === recordId ? { ...entry, conditionGrade: grade } : entry
+      );
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       } catch {}
@@ -39,5 +52,5 @@ export function useScanHistory() {
     } catch {}
   }, []);
 
-  return { history, addToHistory, clearHistory };
+  return { history, addToHistory, updateGrade, clearHistory };
 }

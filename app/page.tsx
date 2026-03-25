@@ -33,7 +33,7 @@ export default function Home() {
   } = useCamera();
   const { state, lookupByBarcode, lookupByPhoto, lookupBySearch, reset } =
     useRecordLookup();
-  const { history, addToHistory } = useScanHistory();
+  const { history, addToHistory, updateGrade } = useScanHistory();
   const batch = useBatchMode();
   const audio = useAudioPlayer();
   const autoPlayedRef = useRef(false);
@@ -123,7 +123,7 @@ export default function Home() {
   );
 
   const handleHistorySelect = useCallback(
-    (record: NonNullable<typeof state.record>) => {
+    (record: { artist: string; title: string }) => {
       lookupBySearch(`${record.artist} ${record.title}`);
     },
     [lookupBySearch]
@@ -213,6 +213,7 @@ export default function Home() {
           onClose={handleDismiss}
           onCapturePhoto={capturePhoto}
           audio={audio}
+          onGraded={(grade) => updateGrade(state.record!.id, grade)}
         />
       )}
 

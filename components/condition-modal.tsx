@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useModal } from "@/hooks/use-modal";
 import type { ConditionGrade } from "@/lib/types";
 import { ConditionBadge } from "@/components/condition-badge";
 
@@ -74,11 +75,15 @@ export function ConditionModal({
     onClose();
   };
 
+  const modalRef = useModal(isOpen, handleClose);
+
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex flex-col justify-end bg-black/80 backdrop-blur-sm"
+          ref={modalRef}
+          tabIndex={-1}
+          className="fixed inset-0 z-50 flex flex-col justify-end bg-black/80 backdrop-blur-sm outline-none"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

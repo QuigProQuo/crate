@@ -2,11 +2,29 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence, type PanInfo } from "framer-motion";
+import { useModal } from "@/hooks/use-modal";
 import type { RecordInfo, TrackPreview, ConditionGrade } from "@/lib/types";
 import { TrackList } from "@/components/track-list";
 import { PriceSection } from "@/components/price-section";
 import { ConditionBadge } from "@/components/condition-badge";
 import { ConditionModal } from "@/components/condition-modal";
+
+function CoverImage({ src, alt }: { src: string; alt: string }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className="relative w-48 h-48">
+      {!loaded && (
+        <div className="absolute inset-0 rounded-xl bg-white/10 animate-pulse" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={`w-48 h-48 rounded-xl object-cover shadow-lg transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+        onLoad={() => setLoaded(true)}
+      />
+    </div>
+  );
+}
 
 interface AudioPlayer {
   currentTrackUrl: string | null;
@@ -20,12 +38,19 @@ interface ResultsSheetProps {
   onClose: () => void;
   onCapturePhoto: () => Blob | null;
   audio: AudioPlayer;
+  onGraded?: (grade: ConditionGrade) => void;
 }
 
-export function ResultsSheet({ record, previews, onClose, onCapturePhoto, audio }: ResultsSheetProps) {
+export function ResultsSheet({ record, previews, onClose, onCapturePhoto, audio, onGraded }: ResultsSheetProps) {
   const { currentTrackUrl, isPlaying, play } = audio;
+  const modalRef = useModal(true, onClose);
   const [gradingOpen, setGradingOpen] = useState(false);
   const [conditionGrade, setConditionGrade] = useState<ConditionGrade | null>(null);
+
+  const handleGraded = (grade: ConditionGrade) => {
+    setConditionGrade(grade);
+    onGraded?.(grade);
+  };
 
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.y > 150) {
@@ -36,7 +61,9 @@ export function ResultsSheet({ record, previews, onClose, onCapturePhoto, audio 
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-x-0 bottom-0 z-30 max-h-[90vh] rounded-t-3xl bg-zinc-900/95 backdrop-blur-xl shadow-2xl"
+        ref={modalRef}
+        tabIndex={-1}
+        className="fixed inset-x-0 bottom-0 z-30 max-h-[90vh] rounded-t-3xl bg-zinc-900/95 backdrop-blur-xl shadow-2xl outline-none"
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
@@ -55,11 +82,7 @@ export function ResultsSheet({ record, previews, onClose, onCapturePhoto, audio 
           {/* Album cover */}
           {record.coverImage && (
             <div className="flex justify-center mb-4">
-              <img
-                src={record.coverImage}
-                alt={`${record.title} cover`}
-                className="w-48 h-48 rounded-xl object-cover shadow-lg"
-              />
+              <CoverImage src={record.coverImage} alt={`${record.title} cover`} />
             </div>
           )}
 
@@ -109,7 +132,7 @@ export function ResultsSheet({ record, previews, onClose, onCapturePhoto, audio 
           <div className="my-5 h-px bg-white/10" />
 
           {/* Track list */}
-          {record.tracklist.length > 0 && (
+          {record.tracklist.length > 0 ? (
             <TrackList
               tracks={record.tracklist}
               previews={previews}
@@ -117,14 +140,16 @@ export function ResultsSheet({ record, previews, onClose, onCapturePhoto, audio 
               isPlaying={isPlaying}
               onPlay={play}
             />
-          )}
+          ) : previews.length === 0 ? (
+            <p className="text-sm text-white/40 text-center py-4">No track listing available</p>
+          ) : null}
         </div>
 
         <ConditionModal
           isOpen={gradingOpen}
           onClose={() => setGradingOpen(false)}
           onCapturePhoto={onCapturePhoto}
-          onGraded={setConditionGrade}
+          onGraded={handleGraded}
         />
       </motion.div>
     </AnimatePresence>
