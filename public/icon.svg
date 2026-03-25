@@ -1,18 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#000"/>
+  <rect width="512" height="512" rx="96" fill="#0a0a0a"/>
+  <!-- Vinyl disc -->
+  <circle cx="256" cy="256" r="210" fill="#111"/>
   <!-- Grooves -->
-  <circle cx="256" cy="256" r="204" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="2"/>
-  <circle cx="256" cy="256" r="188" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1.5"/>
-  <circle cx="256" cy="256" r="172" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="2"/>
-  <circle cx="256" cy="256" r="156" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1.5"/>
-  <circle cx="256" cy="256" r="140" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="2"/>
-  <circle cx="256" cy="256" r="124" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1.5"/>
-  <circle cx="256" cy="256" r="108" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="2"/>
-  <circle cx="256" cy="256" r="92" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1.5"/>
+  <circle cx="256" cy="256" r="200" fill="none" stroke="#222" stroke-width="3"/>
+  <circle cx="256" cy="256" r="185" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+  <circle cx="256" cy="256" r="170" fill="none" stroke="#222" stroke-width="3"/>
+  <circle cx="256" cy="256" r="155" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+  <circle cx="256" cy="256" r="140" fill="none" stroke="#222" stroke-width="3"/>
+  <circle cx="256" cy="256" r="125" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+  <circle cx="256" cy="256" r="110" fill="none" stroke="#222" stroke-width="3"/>
+  <circle cx="256" cy="256" r="95" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+  <circle cx="256" cy="256" r="80" fill="none" stroke="#222" stroke-width="3"/>
   <!-- Label -->
-  <circle cx="256" cy="256" r="60" fill="rgba(255,255,255,0.13)"/>
-  <!-- Spindle -->
-  <circle cx="256" cy="256" r="10" fill="rgba(255,255,255,0.5)"/>
-  <!-- Highlight reflection -->
-  <path d="M 150 110 A 190 190 0 0 1 400 210" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="50" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="58" fill="#1c1c1c"/>
+  <circle cx="256" cy="256" r="56" fill="#222"/>
+  <!-- Spindle hole -->
+  <circle cx="256" cy="256" r="8" fill="#444"/>
+  <!-- Subtle highlight -->
+  <path d="M 140 100 A 200 200 0 0 1 412 220" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="60" stroke-linecap="round"/>
 </svg>
