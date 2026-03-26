@@ -3,17 +3,20 @@ const API_KEY = process.env.CRATE_API_KEY ?? '';
 
 export async function POST(request: Request) {
   try {
+    const body = await request.arrayBuffer();
+
     const res = await fetch(`${API_BASE}/v1/grade`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${API_KEY}`,
         'Content-Type': request.headers.get('Content-Type')!,
       },
-      body: request.body,
+      body,
       signal: AbortSignal.timeout(30_000),
     });
 
-    return new Response(res.body, {
+    const data = await res.text();
+    return new Response(data, {
       status: res.status,
       headers: { 'Content-Type': 'application/json' },
     });
