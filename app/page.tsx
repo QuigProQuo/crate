@@ -45,6 +45,7 @@ export default function Home() {
   const [batchSummaryOpen, setBatchSummaryOpen] = useState(false);
   const [showFullResults, setShowFullResults] = useState(false);
   const [batchToast, setBatchToast] = useState<string | null>(null);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   // Handle results: batch mode vs normal (AR card) flow
   useEffect(() => {
@@ -164,6 +165,7 @@ export default function Home() {
         batchMode={batch.enabled}
         onBatchToggle={batch.toggleBatch}
         batchCount={batch.items.length}
+        onHelpOpen={() => setOnboardingOpen(true)}
       />
 
       {/* Corner brackets viewfinder */}
@@ -268,8 +270,8 @@ export default function Home() {
         onClear={batch.clearBatch}
       />
 
-      {/* First-time onboarding */}
-      <Onboarding />
+      {/* Onboarding walkthrough */}
+      <Onboarding open={onboardingOpen} onClose={() => setOnboardingOpen(false)} />
     </main>
   );
 }

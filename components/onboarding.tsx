@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const STORAGE_KEY = "crate-onboarding-complete";
+interface OnboardingProps {
+  open: boolean;
+  onClose: () => void;
+}
 
 interface Step {
   title: string;
@@ -99,21 +102,18 @@ const steps: Step[] = [
   },
 ];
 
-export function Onboarding() {
-  const [visible, setVisible] = useState(false);
+export function Onboarding({ open, onClose }: OnboardingProps) {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(1);
 
+  // Reset to first step when opened
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const done = localStorage.getItem(STORAGE_KEY);
-    if (!done) setVisible(true);
-  }, []);
+    if (open) setCurrent(0);
+  }, [open]);
 
   const complete = useCallback(() => {
-    localStorage.setItem(STORAGE_KEY, "true");
-    setVisible(false);
-  }, []);
+    onClose();
+  }, [onClose]);
 
   const next = useCallback(() => {
     if (current === steps.length - 1) {
@@ -124,7 +124,7 @@ export function Onboarding() {
     }
   }, [current, complete]);
 
-  if (!visible) return null;
+  if (!open) return null;
 
   const step = steps[current];
   const isLast = current === steps.length - 1;
@@ -137,7 +137,7 @@ export function Onboarding() {
 
   return (
     <AnimatePresence>
-      {visible && (
+      {open && (
         <motion.div
           key="onboarding-backdrop"
           className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md"

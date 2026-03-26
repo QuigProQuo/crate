@@ -8,6 +8,7 @@ interface TopBarProps {
   batchMode: boolean;
   onBatchToggle: () => void;
   batchCount: number;
+  onHelpOpen: () => void;
 }
 
 export function TopBar({
@@ -18,14 +19,37 @@ export function TopBar({
   batchMode,
   onBatchToggle,
   batchCount,
+  onHelpOpen,
 }: TopBarProps) {
   return (
     <div className="fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-5 pt-14 pb-3">
-      {/* App name pill */}
-      <div className="rounded-full bg-white/10 backdrop-blur-md px-4 py-1.5">
-        <span className="text-sm font-semibold tracking-widest text-white/90">
-          CRATE
-        </span>
+      {/* App name pill + help */}
+      <div className="flex items-center gap-2">
+        <div className="rounded-full bg-white/10 backdrop-blur-md px-4 py-1.5">
+          <span className="text-sm font-semibold tracking-widest text-white/90">
+            CRATE
+          </span>
+        </div>
+        <button
+          onClick={onHelpOpen}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 backdrop-blur-md active:scale-95"
+          aria-label="How to use Crate"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="rgba(255,255,255,0.7)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+        </button>
       </div>
 
       {/* Utility icons */}
