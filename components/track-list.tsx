@@ -11,16 +11,29 @@ interface TrackListProps {
   onPlay: (url: string) => void;
 }
 
+/** Strip parenthetical suffixes like "(Alternate Take)" or "(Studio Sequence 1)" */
+function baseTitle(s: string): string {
+  return s.toLowerCase().replace(/\s*\(.*\)\s*$/, "").trim();
+}
+
 function findPreview(
   track: TrackInfo,
   previews: TrackPreview[]
 ): TrackPreview | undefined {
-  const title = track.title.toLowerCase();
+  const title = baseTitle(track.title);
+
+  // Prefer exact base-title match (ignoring parentheticals)
+  const exact = previews.find(
+    (p) => p.previewUrl && baseTitle(p.title) === title
+  );
+  if (exact) return exact;
+
+  // Fall back to substring match
   return previews.find(
     (p) =>
       p.previewUrl &&
-      (p.title.toLowerCase().includes(title) ||
-        title.includes(p.title.toLowerCase()))
+      (baseTitle(p.title).includes(title) ||
+        title.includes(baseTitle(p.title)))
   );
 }
 

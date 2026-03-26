@@ -99,8 +99,20 @@ export async function searchByBarcode(barcode: string): Promise<RecordInfo | nul
 }
 
 export async function searchByText(query: string): Promise<RecordInfo | null> {
-  const url = `https://api.discogs.com/database/search?q=${encodeURIComponent(query)}&type=release&key=${DISCOGS_KEY}&secret=${DISCOGS_SECRET}`;
-  const res = await fetch(url, { headers });
+  // Try vinyl format first, fall back to any release
+  const base = `https://api.discogs.com/database/search?q=${encodeURIComponent(query)}&type=release&key=${DISCOGS_KEY}&secret=${DISCOGS_SECRET}`;
+
+  const vinylRes = await fetch(`${base}&format=Vinyl`, { headers });
+  if (vinylRes.ok) {
+    const vinylData: DiscogsSearchResponse = await vinylRes.json();
+    if (vinylData.results?.length) {
+      console.log(`[discogs] vinyl hit | ${vinylData.results.length} results | query=${query}`);
+      return fetchRelease(vinylData.results[0].resource_url);
+    }
+  }
+
+  // Fall back to any format
+  const res = await fetch(base, { headers });
   if (!res.ok) {
     console.error(`[discogs] text search failed | ${res.status} ${res.statusText} | query=${query}`);
     return null;
