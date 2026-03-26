@@ -1,27 +1,26 @@
-const API_BASE = process.env.CRATE_API_URL ?? 'http://localhost:3001';
-const API_KEY = process.env.CRATE_API_KEY ?? '';
+import { identifyRecord } from '@/lib/claude-vision';
 
 export async function POST(request: Request) {
   try {
-    const res = await fetch(`${API_BASE}/v1/identify`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': request.headers.get('Content-Type')!,
-      },
-      body: request.body,
-      signal: AbortSignal.timeout(30_000),
-    });
+    const formData = await request.formData();
+    const file = formData.get('image') as File | null;
 
-    return new Response(res.body, {
-      status: res.status,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    if (!file) {
+      return Response.json({ error: 'No image provided.' }, { status: 400 });
+    }
+
+    const buffer = await file.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString('base64');
+    const mediaType = file.type || 'image/jpeg';
+
+    const result = await identifyRecord(base64, mediaType);
+
+    return Response.json(result);
   } catch (err) {
-    const message =
-      err instanceof DOMException && err.name === 'TimeoutError'
-        ? 'Identification timed out. Please try again.'
-        : 'Unable to reach identification service.';
-    return Response.json({ error: message }, { status: 502 });
+    console.error('[identify] failed', err);
+    return Response.json(
+      { error: 'Could not identify the record. Please try again.' },
+      { status: 500 },
+    );
   }
 }

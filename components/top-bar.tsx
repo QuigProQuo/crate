@@ -9,6 +9,8 @@ interface TopBarProps {
   onBatchToggle: () => void;
   batchCount: number;
   onHelpOpen: () => void;
+  onAccountOpen: () => void;
+  isLoggedIn: boolean;
 }
 
 export function TopBar({
@@ -20,6 +22,8 @@ export function TopBar({
   onBatchToggle,
   batchCount,
   onHelpOpen,
+  onAccountOpen,
+  isLoggedIn,
 }: TopBarProps) {
   return (
     <div className="fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-5 pt-14 pb-3">
@@ -146,6 +150,29 @@ export function TopBar({
               {batchCount}
             </span>
           )}
+        </button>
+
+        {/* Account */}
+        <button
+          onClick={onAccountOpen}
+          className={`flex h-10 w-10 items-center justify-center rounded-full backdrop-blur-md active:scale-95 transition-colors ${
+            isLoggedIn ? "bg-white/20" : "bg-white/10"
+          }`}
+          aria-label="Account"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={isLoggedIn ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.7)"}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
         </button>
       </div>
     </div>

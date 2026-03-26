@@ -22,6 +22,11 @@ import { useRecordLookup } from "@/hooks/use-record-lookup";
 import { useScanHistory } from "@/hooks/use-scan-history";
 import { useBatchMode, type BatchItem } from "@/hooks/use-batch-mode";
 import { useAudioPlayer } from "@/hooks/use-audio-player";
+import { useAuth } from "@/hooks/use-auth";
+import { useCollection } from "@/hooks/use-collection";
+import { LoginModal } from "@/components/login-modal";
+import { AccountSheet } from "@/components/account-sheet";
+import { CollectionSheet } from "@/components/collection-sheet";
 
 export default function Home() {
   const {
@@ -38,6 +43,8 @@ export default function Home() {
   const { history, addToHistory, updateGrade } = useScanHistory();
   const batch = useBatchMode();
   const audio = useAudioPlayer();
+  const auth = useAuth();
+  const collection = useCollection();
   const autoPlayedRef = useRef(false);
 
   const [searchOpen, setSearchOpen] = useState(false);
@@ -46,6 +53,9 @@ export default function Home() {
   const [showFullResults, setShowFullResults] = useState(false);
   const [batchToast, setBatchToast] = useState<string | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [collectionOpen, setCollectionOpen] = useState(false);
 
   // Handle results: batch mode vs normal (AR card) flow
   useEffect(() => {
@@ -166,6 +176,8 @@ export default function Home() {
         onBatchToggle={batch.toggleBatch}
         batchCount={batch.items.length}
         onHelpOpen={() => setOnboardingOpen(true)}
+        onAccountOpen={() => setAccountOpen(true)}
+        isLoggedIn={auth.isLoggedIn}
       />
 
       {/* Corner brackets viewfinder */}
@@ -218,6 +230,17 @@ export default function Home() {
           onCapturePhoto={capturePhoto}
           audio={audio}
           onGraded={(grade) => updateGrade(state.record!.id, grade)}
+          collectionStatus={auth.isLoggedIn ? collection.getStatus(state.record!.id) : undefined}
+          onHave={auth.isLoggedIn ? () => {
+            const status = collection.getStatus(state.record!.id);
+            if (status === 'have') collection.removeFromCollection(collection.getItem(state.record!.id)!.id);
+            else collection.addToCollection(state.record!.id, 'have');
+          } : undefined}
+          onWant={auth.isLoggedIn ? () => {
+            const status = collection.getStatus(state.record!.id);
+            if (status === 'want') collection.removeFromCollection(collection.getItem(state.record!.id)!.id);
+            else collection.addToCollection(state.record!.id, 'want');
+          } : undefined}
         />
       )}
 
@@ -268,6 +291,48 @@ export default function Home() {
         onSelect={handleBatchSelect}
         onRemove={batch.removeFromBatch}
         onClear={batch.clearBatch}
+      />
+
+      {/* Login modal */}
+      <LoginModal
+        isOpen={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        onLogin={auth.login}
+        onVerify={auth.verify}
+        onSuccess={() => {
+          setLoginOpen(false);
+          collection.refresh();
+        }}
+      />
+
+      {/* Account sheet */}
+      <AccountSheet
+        isOpen={accountOpen}
+        onClose={() => setAccountOpen(false)}
+        user={auth.user}
+        onOpenLogin={() => {
+          setAccountOpen(false);
+          setLoginOpen(true);
+        }}
+        onSignOut={async () => {
+          await auth.logout();
+          setAccountOpen(false);
+        }}
+        onOpenCollection={() => {
+          setAccountOpen(false);
+          setCollectionOpen(true);
+        }}
+      />
+
+      {/* Collection sheet */}
+      <CollectionSheet
+        isOpen={collectionOpen}
+        onClose={() => setCollectionOpen(false)}
+        items={collection.items}
+        onSelect={(item) => {
+          setCollectionOpen(false);
+          lookupBySearch(`${item.artist} ${item.title}`);
+        }}
       />
 
       {/* Onboarding walkthrough */}

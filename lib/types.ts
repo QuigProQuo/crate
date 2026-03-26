@@ -45,6 +45,17 @@ export interface ScanHistoryEntry extends RecordInfo {
   conditionGrade?: ConditionGrade;
 }
 
+export interface CollectionItem {
+  id: string;
+  discogsId: number;
+  status: 'have' | 'want';
+  notes: string | null;
+  addedAt: number;
+  title?: string;
+  artist?: string;
+  coverImage?: string;
+}
+
 export type LookupStatus = 'idle' | 'loading' | 'results' | 'error';
 
 export interface LookupState {

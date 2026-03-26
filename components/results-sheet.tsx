@@ -8,6 +8,7 @@ import { TrackList } from "@/components/track-list";
 import { PriceSection } from "@/components/price-section";
 import { ConditionBadge } from "@/components/condition-badge";
 import { ConditionModal } from "@/components/condition-modal";
+import { CollectionButtons } from "@/components/collection-buttons";
 
 function CoverImage({ src, alt }: { src: string; alt: string }) {
   const [loaded, setLoaded] = useState(false);
@@ -39,9 +40,12 @@ interface ResultsSheetProps {
   onCapturePhoto: () => Blob | null;
   audio: AudioPlayer;
   onGraded?: (grade: ConditionGrade) => void;
+  collectionStatus?: 'have' | 'want' | null;
+  onHave?: () => void;
+  onWant?: () => void;
 }
 
-export function ResultsSheet({ record, previews, onClose, onCapturePhoto, audio, onGraded }: ResultsSheetProps) {
+export function ResultsSheet({ record, previews, onClose, onCapturePhoto, audio, onGraded, collectionStatus, onHave, onWant }: ResultsSheetProps) {
   const { currentTrackUrl, isPlaying, play } = audio;
   const modalRef = useModal(true, onClose);
   const [gradingOpen, setGradingOpen] = useState(false);
@@ -127,6 +131,18 @@ export function ResultsSheet({ record, previews, onClose, onCapturePhoto, audio,
               </button>
             )}
           </div>
+
+          {/* Collection buttons */}
+          {onHave && onWant && (
+            <div className="mt-3">
+              <CollectionButtons
+                discogsId={record.id}
+                currentStatus={collectionStatus ?? null}
+                onHave={onHave}
+                onWant={onWant}
+              />
+            </div>
+          )}
 
           {/* Divider */}
           <div className="my-5 h-px bg-white/10" />
