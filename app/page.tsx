@@ -14,6 +14,8 @@ import { HistorySheet } from "@/components/history-sheet";
 import { ARInfoCard } from "@/components/ar-info-card";
 import { BatchStrip } from "@/components/batch-strip";
 import { BatchSummary } from "@/components/batch-summary";
+import { InstallPrompt } from "@/components/install-prompt";
+import { Onboarding } from "@/components/onboarding";
 import { useCamera } from "@/hooks/use-camera";
 import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
 import { useRecordLookup } from "@/hooks/use-record-lookup";
@@ -253,6 +255,9 @@ export default function Home() {
         onSelect={handleHistorySelect}
       />
 
+      {/* iOS install prompt */}
+      <InstallPrompt />
+
       {/* Batch summary */}
       <BatchSummary
         isOpen={batchSummaryOpen}
@@ -262,6 +267,9 @@ export default function Home() {
         onRemove={batch.removeFromBatch}
         onClear={batch.clearBatch}
       />
+
+      {/* First-time onboarding */}
+      <Onboarding />
     </main>
   );
 }
