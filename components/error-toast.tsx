@@ -13,9 +13,11 @@ export function ErrorToast({ message, onDismiss, onRetry }: ErrorToastProps) {
     if ("vibrate" in navigator) {
       navigator.vibrate([100, 50, 100]);
     }
+    // Don't auto-dismiss if there's a retry button — let the user decide
+    if (onRetry) return;
     const timer = setTimeout(onDismiss, 5000);
     return () => clearTimeout(timer);
-  }, [onDismiss]);
+  }, [onDismiss, onRetry]);
 
   return (
     <div className="fixed bottom-32 left-4 right-4 z-50 flex items-center gap-3 rounded-xl border border-red-500/30 bg-zinc-900/95 px-4 py-3 shadow-lg backdrop-blur-sm">

@@ -54,4 +54,5 @@ export interface LookupState {
   previews?: TrackPreview[];
   conditionGrade?: ConditionGrade;
   error?: string;
+  retryable?: boolean;
 }

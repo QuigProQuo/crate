@@ -1,10 +1,44 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { ConditionGrade, LookupState } from "@/lib/types";
+
+/** Extract a human-readable error from a failed response, falling back to a default. */
+async function errorFrom(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = await res.json();
+    if (typeof body?.error === "string" && body.error.length > 0) return body.error;
+  } catch {
+    // body wasn't JSON — fall through
+  }
+  return fallback;
+}
+
+/** Fetch with a single retry on network / 5xx errors. */
+async function fetchWithRetry(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  try {
+    const res = await fetch(input, init);
+    if (res.status >= 500) {
+      // Clone the original init for retry — body streams can only be consumed once,
+      // but FormData / JSON strings are re-readable via the caller passing a new body.
+      throw new Error(`Server error ${res.status}`);
+    }
+    return res;
+  } catch (firstErr) {
+    // Single retry after a brief pause
+    await new Promise((r) => setTimeout(r, 1_000));
+    return fetch(input, init);
+  }
+}
 
 export function useRecordLookup() {
   const [state, setState] = useState<LookupState>({ status: "idle" });
+
+  // Keep a ref to the last photo blob so retry can re-send it
+  const lastBlobRef = useRef<Blob | null>(null);
 
   const lookupByBarcode = useCallback(async (barcode: string) => {
     try {
@@ -17,11 +51,8 @@ export function useRecordLookup() {
       });
 
       if (!discogsRes.ok) {
-        const data = await discogsRes.json().catch(() => ({}));
-        setState({
-          status: "error",
-          error: data.error || "Record not found for this barcode.",
-        });
+        const msg = await errorFrom(discogsRes, "Record not found for this barcode.");
+        setState({ status: "error", error: msg });
         return;
       }
 
@@ -39,40 +70,82 @@ export function useRecordLookup() {
 
       setState({ status: "results", record, previews });
     } catch {
-      setState({ status: "error", error: "Something went wrong." });
+      setState({ status: "error", error: "Something went wrong. Check your connection." });
     }
   }, []);
 
   const lookupByPhoto = useCallback(async (blob: Blob) => {
+    lastBlobRef.current = blob;
+
     try {
       setState({ status: "loading", step: "identify" });
 
-      const identifyForm = new FormData();
-      identifyForm.append("image", blob, "photo.jpg");
-
-      const gradeForm = new FormData();
-      gradeForm.append("image", blob, "photo.jpg");
+      // Build form data for each request (streams can only be consumed once)
+      const makeIdentifyForm = () => {
+        const fd = new FormData();
+        fd.append("image", blob, "photo.jpg");
+        return fd;
+      };
+      const makeGradeForm = () => {
+        const fd = new FormData();
+        fd.append("image", blob, "photo.jpg");
+        return fd;
+      };
 
       // Fire identify and grade in parallel
       const [identifyResult, gradeResult] = await Promise.allSettled([
-        fetch("/api/identify", { method: "POST", body: identifyForm }),
-        fetch("/api/grade", { method: "POST", body: gradeForm }),
+        fetchWithRetry("/api/identify", { method: "POST", body: makeIdentifyForm() }),
+        fetch("/api/grade", { method: "POST", body: makeGradeForm() }),
       ]);
 
-      if (identifyResult.status === "rejected" || !identifyResult.value.ok) {
+      // --- Handle identify failure with specific messaging ---
+      if (identifyResult.status === "rejected") {
+        const reason = identifyResult.reason;
+        const isTimeout =
+          reason instanceof DOMException && reason.name === "TimeoutError";
         setState({
           status: "error",
-          error: "Could not identify the record from the photo.",
+          error: isTimeout
+            ? "Identification timed out. Please try again."
+            : "Could not reach the server. Check your connection.",
+          retryable: true,
         });
         return;
       }
 
-      const identification = await identifyResult.value.json();
+      const identifyRes = identifyResult.value;
+
+      if (!identifyRes.ok) {
+        const msg = await errorFrom(
+          identifyRes,
+          identifyRes.status === 502
+            ? "Identification service is temporarily unavailable."
+            : "Could not identify the record from the photo. Try a clearer angle.",
+        );
+        setState({ status: "error", error: msg, retryable: true });
+        return;
+      }
+
+      const identification = await identifyRes.json();
+
+      // Validate that we got usable identification data
+      if (!identification.artist && !identification.album) {
+        setState({
+          status: "error",
+          error: "Could not identify the record. Try getting closer to the cover art.",
+          retryable: true,
+        });
+        return;
+      }
 
       // Parse grade if available (non-blocking)
       let conditionGrade: ConditionGrade | undefined;
       if (gradeResult.status === "fulfilled" && gradeResult.value.ok) {
-        conditionGrade = await gradeResult.value.json();
+        try {
+          conditionGrade = await gradeResult.value.json();
+        } catch {
+          // Grading JSON parse failed — not critical, continue without it
+        }
       }
 
       setState({ status: "loading", step: "discogs" });
@@ -86,10 +159,8 @@ export function useRecordLookup() {
       });
 
       if (!discogsRes.ok) {
-        setState({
-          status: "error",
-          error: "Record not found in database.",
-        });
+        const msg = await errorFrom(discogsRes, "Record not found in database.");
+        setState({ status: "error", error: msg });
         return;
       }
 
@@ -106,8 +177,15 @@ export function useRecordLookup() {
       const previews = previewsData.tracks ?? [];
 
       setState({ status: "results", record, previews, conditionGrade });
-    } catch {
-      setState({ status: "error", error: "Something went wrong." });
+    } catch (err) {
+      const isAbort = err instanceof DOMException && err.name === "AbortError";
+      setState({
+        status: "error",
+        error: isAbort
+          ? "Request was cancelled."
+          : "Something went wrong. Check your connection and try again.",
+        retryable: true,
+      });
     }
   }, []);
 
@@ -122,11 +200,8 @@ export function useRecordLookup() {
       });
 
       if (!discogsRes.ok) {
-        const data = await discogsRes.json().catch(() => ({}));
-        setState({
-          status: "error",
-          error: data.error || "No results found.",
-        });
+        const msg = await errorFrom(discogsRes, "No results found.");
+        setState({ status: "error", error: msg });
         return;
       }
 
@@ -144,13 +219,19 @@ export function useRecordLookup() {
 
       setState({ status: "results", record, previews });
     } catch {
-      setState({ status: "error", error: "Something went wrong." });
+      setState({ status: "error", error: "Something went wrong. Check your connection." });
     }
   }, []);
+
+  const retry = useCallback(() => {
+    if (lastBlobRef.current) {
+      lookupByPhoto(lastBlobRef.current);
+    }
+  }, [lookupByPhoto]);
 
   const reset = useCallback(() => {
     setState({ status: "idle" });
   }, []);
 
-  return { state, lookupByBarcode, lookupByPhoto, lookupBySearch, reset };
+  return { state, lookupByBarcode, lookupByPhoto, lookupBySearch, retry, reset };
 }

@@ -31,7 +31,7 @@ export default function Home() {
     toggleTorch,
     flipCamera,
   } = useCamera();
-  const { state, lookupByBarcode, lookupByPhoto, lookupBySearch, reset } =
+  const { state, lookupByBarcode, lookupByPhoto, lookupBySearch, retry, reset } =
     useRecordLookup();
   const { history, addToHistory, updateGrade } = useScanHistory();
   const batch = useBatchMode();
@@ -231,7 +231,11 @@ export default function Home() {
 
       {/* Error toast */}
       {state.status === "error" && state.error && (
-        <ErrorToast message={state.error} onDismiss={handleDismiss} />
+        <ErrorToast
+          message={state.error}
+          onDismiss={handleDismiss}
+          onRetry={state.retryable ? retry : undefined}
+        />
       )}
 
       {/* Search modal */}
